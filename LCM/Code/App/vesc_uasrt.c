@@ -12,6 +12,9 @@ uint8_t VESC_RX_Flag = 0;
 #ifdef XRV
 #define FIRMWARE_ID "XRV_2_1_2"
 #endif
+#ifdef PINTV
+#define FIRMWARE_ID "PintV_2_1_2"
+#endif
 #ifdef ADV
 #define FIRMWARE_ID "ADV_2_1_2"
 #endif
@@ -24,42 +27,42 @@ lcmConfig_t lcmConfig;
 
 /**************************************************
  * @brie   :Send_Pack_Data()
- * @note   :发送一包数据
- * @param  :payload 要发送数据包的起始地址
- *          len 数据包长度
- * @retval :无
+ * @note   :����һ������
+ * @param  :payload Ҫ�������ݰ�����ʼ��ַ
+ *          len ���ݰ�����
+ * @retval :��
  **************************************************/
 void Send_Pack_Data(uint8_t *payload,uint16_t len) 
 {
-	uint8_t protocol_buff[40]; //发送缓冲区
+	uint8_t protocol_buff[40]; //���ͻ�����
 	uint8_t count = 0;
-	uint16_t crcpayload = crc16(payload, len);  //计算校验 
+	uint16_t crcpayload = crc16(payload, len);  //����У�� 
 	
 	/*
-		协议格式
+		Э���ʽ
 	
-		起始字节（一个字节） + 数据包长度（一个或两个字节） + 数据包（N个字节） + 校验（两个字节） + 停止字节（一个字节）
+		��ʼ�ֽڣ�һ���ֽڣ� + ���ݰ����ȣ�һ���������ֽڣ� + ���ݰ���N���ֽڣ� + У�飨�����ֽڣ� + ֹͣ�ֽڣ�һ���ֽڣ�
 	
-		起始字节:	0x02数据包长度1-256个字节
-					0x03数据包长度超过256个字节
+		��ʼ�ֽ�:	0x02���ݰ�����1-256���ֽ�
+					0x03���ݰ����ȳ���256���ֽ�
 	
-		数据包长度: 起始字节0x02 数据包占一个字节
-	                起始字节0x03 数据包占两个字节
+		���ݰ�����: ��ʼ�ֽ�0x02 ���ݰ�ռһ���ֽ�
+					��ʼ�ֽ�0x03 ���ݰ�ռ�����ֽ�
 	
-		数据包:  	数据包第一个字节为数据包ID
+		���ݰ�:  	���ݰ���һ���ֽ�Ϊ���ݰ�ID
 	
-		校验:		CRC校验 两个字节 
-	    
-		停止字节:   固定0x03
+		У��:		CRCУ�� �����ֽ� 
+		
+		ֹͣ�ֽ�:   �̶�0x03
 	
 	*/
 	
-	if (len <= 32) //数据包长度不大于256个字节
+	if (len <= 32) //���ݰ����Ȳ�����256���ֽ�
 	{
 		protocol_buff[count++] = 2;
 		protocol_buff[count++] = len;
 	}
-	else //数据包长度大于256个字节
+	else //���ݰ����ȴ���256���ֽ�
 	{
 		// no need to support extra long messages since we don't use such messages
 		return;
@@ -68,7 +71,7 @@ void Send_Pack_Data(uint8_t *payload,uint16_t len)
 		//protocol_buff[count++] = (uint8_t)(len & 0xFF);
 	}
 
-	memcpy(&protocol_buff[count], payload, len);  //把数据包复制到协议里
+	memcpy(&protocol_buff[count], payload, len);  //�����ݰ����Ƶ�Э����
 
 	count += len;
 	protocol_buff[count++] = (uint8_t)(crcpayload >> 8);
@@ -84,14 +87,14 @@ void buffer_append_int16(uint8_t* buffer, int16_t number, uint8_t *index) {
 }
 
 void buffer_append_float16(uint8_t* buffer, float number, uint8_t scale, uint8_t *index) {
-    buffer_append_int16(buffer, (int16_t)(number * scale), index);
+	buffer_append_int16(buffer, (int16_t)(number * scale), index);
 }
 
 /**************************************************
  * @brie   :Get_Vesc_Pack_Data()
- * @note   :获取一包数据
- * @param  :id 数据包id
- * @retval :无
+ * @note   :��ȡһ������
+ * @param  :id ���ݰ�id
+ * @retval :��
  **************************************************/
 void Get_Vesc_Pack_Data(COMM_PACKET_ID id)
 {
@@ -117,7 +120,13 @@ void Get_Vesc_Pack_Data(COMM_PACKET_ID id)
 		command[1] = 101;
 		command[2] = 28; 											// FLOAT_COMMAND_CHARGESTATE
  		command[3] = 151; 											// -charging: 1/0 aka true/false
+#ifdef HAS_CHARGING
  		command[4] = Charge_Flag == 2 ? 1: 0; 						// -charging: 1/0 aka true/false
+#else
+ 		command[4] = 0; 						                    // -charging: 1/0 aka true/false
+		const float Charge_Voltage = 0;
+		const float Charge_Current = 0;
+#endif
 		uint8_t ind = 5;
 		buffer_append_float16(command, Charge_Voltage, 10, &ind); 	// -voltage: 16bit float divided by 10
 		buffer_append_float16(command, Charge_Current, 10, &ind); 	// -current: 16bit float divided by 10
@@ -129,10 +138,19 @@ void Get_Vesc_Pack_Data(COMM_PACKET_ID id)
 		command[1] = 101;
 		command[2] = 99; // FLOAT_COMMAND_LCM_DEBUG
 		command[3] = Power_Flag;
+#ifdef HAS_CHARGING
 		command[4] = Charge_Flag;
+#else
+		command[4] = 0;
+#endif
 		command[5] = data.dutyCycleNow;
+#ifdef HAS_WS2812
 		command[6] = WS2812_Display_Flag;
 		command[7] = WS2812_Flag;
+#else
+		command[6] = 0;
+		command[7] = 0;
+#endif        
 		command[8] = Shutdown_Time_M;
 		command[9] = Shutdown_Time_S / 1000;
 		command[10] = GPIOC->IDR;
@@ -144,9 +162,9 @@ void Get_Vesc_Pack_Data(COMM_PACKET_ID id)
 
 /**************************************************
  * @brie   :buffer_get_int16()
- * @note   :缓冲区两个字节拼一个int16_t
- * @param  :buffer地址  index地址偏移
- * @retval :无
+ * @note   :�����������ֽ�ƴһ��int16_t
+ * @param  :buffer��ַ  index��ַƫ��
+ * @retval :��
  **************************************************/
 int16_t buffer_get_int16(const uint8_t *buffer, int32_t *index) {
 	int16_t res =	((uint16_t) buffer[*index]) << 8 |
@@ -156,9 +174,9 @@ int16_t buffer_get_int16(const uint8_t *buffer, int32_t *index) {
 }
 /**************************************************
  * @brie   :buffer_get_uint16()
- * @note   :缓冲区两个字节拼一个uint16_t
- * @param  :buffer地址  index地址偏移
- * @retval :无
+ * @note   :�����������ֽ�ƴһ��uint16_t
+ * @param  :buffer��ַ  index��ַƫ��
+ * @retval :��
  **************************************************/
 uint16_t buffer_get_uint16(const uint8_t *buffer, int32_t *index) {
 	uint16_t res = 	((uint16_t) buffer[*index]) << 8 |
@@ -168,9 +186,9 @@ uint16_t buffer_get_uint16(const uint8_t *buffer, int32_t *index) {
 }
 /**************************************************
  * @brie   :buffer_get_int32()
- * @note   :缓冲区四个字节拼一个int32_t
- * @param  :buffer地址  index地址偏移
- * @retval :无
+ * @note   :�������ĸ��ֽ�ƴһ��int32_t
+ * @param  :buffer��ַ  index��ַƫ��
+ * @retval :��
  **************************************************/
 int32_t buffer_get_int32(const uint8_t *buffer, int32_t *index) {
 	int32_t res =	((uint32_t) buffer[*index]) << 24 |
@@ -182,9 +200,9 @@ int32_t buffer_get_int32(const uint8_t *buffer, int32_t *index) {
 }
 /**************************************************
  * @brie   :buffer_get_uint32()
- * @note   :缓冲区四个字节拼一个uint32_t
- * @param  :buffer地址  index地址偏移
- * @retval :无
+ * @note   :�������ĸ��ֽ�ƴһ��uint32_t
+ * @param  :buffer��ַ  index��ַƫ��
+ * @retval :��
  **************************************************/
 uint32_t buffer_get_uint32(const uint8_t *buffer, int32_t *index) {
 	uint32_t res =	((uint32_t) buffer[*index]) << 24 |
@@ -196,21 +214,21 @@ uint32_t buffer_get_uint32(const uint8_t *buffer, int32_t *index) {
 }
 /**************************************************
  * @brie   :buffer_get_float16()
- * @note   :缓冲区两个字节拼一个float
- * @param  :buffer地址  index地址偏移  scale分母
- * @retval :无
+ * @note   :�����������ֽ�ƴһ��float
+ * @param  :buffer��ַ  index��ַƫ��  scale��ĸ
+ * @retval :��
  **************************************************/
 float buffer_get_float16(const uint8_t *buffer, float scale, int32_t *index) {
-    return (float)buffer_get_int16(buffer, index) / scale;
+	return (float)buffer_get_int16(buffer, index) / scale;
 }
 /**************************************************
  * @brie   :buffer_get_float32()
- * @note   :缓冲区四个字节拼一个float
- * @param  :buffer地址  index地址偏移	scale分母
- * @retval :无
+ * @note   :�������ĸ��ֽ�ƴһ��float
+ * @param  :buffer��ַ  index��ַƫ��	scale��ĸ
+ * @retval :��
  **************************************************/
 float buffer_get_float32(const uint8_t *buffer, float scale, int32_t *index) {
-    return (float)buffer_get_int32(buffer, index) / scale;
+	return (float)buffer_get_int32(buffer, index) / scale;
 }
 
 void Process_Command(uint8_t command, uint8_t data)
@@ -268,9 +286,9 @@ void Process_Command(uint8_t command, uint8_t data)
 
 /**************************************************
  * @brie   :Protocol_Parse()
- * @note   :协议解析
- * @param  :message 接收到数据的起始地址
- * @retval :0 解析成功 1解析失败
+ * @note   :Э�����
+ * @param  :message ���յ����ݵ���ʼ��ַ
+ * @retval :0 �����ɹ� 1����ʧ��
  **************************************************/
 uint8_t Protocol_Parse(uint8_t * message)
 {
@@ -307,7 +325,7 @@ uint8_t Protocol_Parse(uint8_t * message)
 	crcpayload = crc16(&message[counter], len);
 	
 	if(crcpayload != (((uint16_t)message[counter+len])<<8|
-		             ((uint16_t)message[counter+len+1])))
+					 ((uint16_t)message[counter+len+1])))
 	{
 		return 1; //crc is wrong
 	}
