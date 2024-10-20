@@ -1,6 +1,7 @@
 #ifndef __CONFIG_H
 #define __CONFIG_H
 
+// NOTE: These are defined in the uVision target settings
 // #define GTV
 // #define PINTV
 // #define XRV
