@@ -15,10 +15,11 @@
 #define HAS_WS2812
 #endif
 
-// #define USE_BUZZER
+#define USE_BUZZER
 #ifdef USE_BUZZER
-#define BEEP_ON_POWER
-#define BEEP_ON_DUTY_CYCLE
+// #define BEEP_ON_POWER_AND_LIGHTS
 #endif
+
+#define CONTROL_POWER
 
 #endif

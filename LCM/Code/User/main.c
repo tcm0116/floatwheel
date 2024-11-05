@@ -70,7 +70,9 @@ int main(void)
 	}
 	while(1)
 	{
+#ifdef CONTROL_POWER
 		KEY1_Task();
+#endif
 #ifdef HAS_WS2812
 		if(WS2812_Counter >= 20) // 20ms refresh period
 		{

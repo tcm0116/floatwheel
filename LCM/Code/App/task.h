@@ -8,7 +8,6 @@
 #include "flag_bit.h"
 #include "vesc_uasrt.h"
 
-#ifdef HAS_WS2812
 typedef enum
 {
 	P42A,
@@ -25,7 +24,6 @@ typedef enum
 #define	  FULL_VOLTAGE	  			82
 #define	  CHARGING_VOLTAGE	  		40
 #define   CHARGE_CURRENT			0.12
-#endif
 #endif
 
 #define   SHUTDOWN_TIME		  		20

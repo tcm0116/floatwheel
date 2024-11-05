@@ -506,13 +506,20 @@ void Power_Task(void)
 	static uint8_t power_flag_last = 0; //��һ�ε�״̬
 	static uint8_t power_step = 0;
 
+#ifdef CONTROL_POWER
 	if (Power_Flag == 4) {
 		if(Power_Time > VESC_SHUTDOWN_TIME)
 		{
 			Power_Flag = 3;
 		}
 	}
-	
+#else
+    if (Power_Flag == 0) {
+        Power_Flag = 1;
+        lcmConfigReset();
+    }
+#endif
+
 	if(power_flag_last == Power_Flag && Power_Flag != 1)
 	{
 		return;
@@ -522,7 +529,9 @@ void Power_Task(void)
 	switch(Power_Flag)
 	{
 		case 1://VESC Power On
+#ifdef CONTROL_POWER
 			PWR_ON;
+#endif
 			switch(power_step)
 			{
 				case 0:
@@ -535,8 +544,9 @@ void Power_Task(void)
 					{
 						Power_Flag = 2; // Boot completed
 						Gear_Position = 1; // The default setting is 1st gear after power-on.
-#ifdef BEEP_ON_POWER
-						Buzzer_Flag = 2;    // The default buzzer sounds when powering on
+#ifdef USE_BUZZER
+						//Buzzer_Flag = 2;    // The default buzzer sounds when powering on
+                        Buzzer_Ring(200);
 #endif
 						power_step = 0;
 #ifdef HAS_WS2812
@@ -548,6 +558,7 @@ void Power_Task(void)
 			
 		break;	
 
+#ifdef CONTROL_POWER
 		case 3:// VESC is shut down (either auto-shutdown or button press)
 #ifdef HAS_WS2812
 			WS2812_Display_Flag = 0;
@@ -559,6 +570,7 @@ void Power_Task(void)
 		case 4:// New Power state for shutdown sequence
 			WS2812_Display_Flag = 3;
 		    break;
+#endif
 #endif
 		default:
 		break;
@@ -891,6 +903,7 @@ void Buzzer_Task(void)
 	}
 	else
 	{
+#ifdef BEEP_ON_POWER_AND_LIGHTS
 		switch(buzzer_step)
 		{
 			case 0:
@@ -921,6 +934,7 @@ void Buzzer_Task(void)
 			
 		  break;
 		}
+#endif
 	}
 }
 
@@ -1114,7 +1128,7 @@ void VESC_State_Task(void)
 	{
 		data.dutyCycleNow = -data.dutyCycleNow;
 	}
-#ifdef BEEP_ON_DUTY_CYCLE
+
 	// Duty Cycle beep
 	if ((lcmConfig.dutyBeep > 0) && (data.dutyCycleNow >= lcmConfig.dutyBeep))
 	{
@@ -1128,7 +1142,6 @@ void VESC_State_Task(void)
 	if (data.state > RUNNING_UPSIDEDOWN) {
 		Buzzer_Frequency = 0;
 	}
-#endif	
 	
 	if(data.rpm<0)
 	{
