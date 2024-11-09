@@ -4,18 +4,18 @@
 	This file is part of the VESC firmware.
 
 	The VESC firmware is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    The VESC firmware is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	The VESC firmware is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-    */
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+	*/
 
 #ifndef DATATYPES_H_
 #define DATATYPES_H_
@@ -1254,23 +1254,23 @@ typedef struct {
 	float temp_mos_2;
 	float temp_mos_3;
 	float temp_motor;
-    float current_motor;
-    float current_in;
-    float id;
-    float iq;
-    float rpm;
-    float duty_now;
-    float amp_hours;
-    float amp_hours_charged;
-    float watt_hours;
-    float watt_hours_charged;
-    int tachometer;
-    int tachometer_abs;
-    float position;
-    mc_fault_code fault_code;
-    int vesc_id;
-    float vd;
-    float vq;
+	float current_motor;
+	float current_in;
+	float id;
+	float iq;
+	float rpm;
+	float duty_now;
+	float amp_hours;
+	float amp_hours_charged;
+	float watt_hours;
+	float watt_hours_charged;
+	int tachometer;
+	int tachometer_abs;
+	float position;
+	mc_fault_code fault_code;
+	int vesc_id;
+	float vd;
+	float vq;
 } mc_values;
 
 typedef enum {
@@ -1357,7 +1357,9 @@ typedef enum {
 	FLOAT_COMMAND_HAPTIC = 23,
 	FLOAT_COMMAND_LCM_POLL = 24,
 	FLOAT_COMMAND_LCM_CTRL = 25,
-	FLOAT_COMMAND_LCM_INFO = 26
+	FLOAT_COMMAND_LCM_INFO = 26,
+	FLOAT_COMMAND_CHARGESTATE = 28,
+	FLOAT_COMMAND_LCM_DEBUG = 99,
 } float_commands;
 
 typedef enum {
@@ -1366,8 +1368,8 @@ typedef enum {
 	RUNNING_TILTBACK = 2,
 	RUNNING_WHEELSLIP = 3,
 	RUNNING_UPSIDEDOWN = 4,
-	RUNNING_FLYWHEEL = 5,   // we remain in "RUNNING" state in flywheel mode,
-	                        // but then report "RUNNING_FLYWHEEL" in rt data
+	RUNNING_FLYWHEEL = 5,	// we remain in "RUNNING" state in flywheel mode,
+							// but then report "RUNNING_FLYWHEEL" in rt data
 	FAULT_ANGLE_PITCH = 6,	// skipped 5 for compatibility
 	FAULT_ANGLE_ROLL = 7,
 	FAULT_SWITCH_HALF = 8,

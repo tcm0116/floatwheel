@@ -27,57 +27,58 @@ lcmConfig_t lcmConfig;
 
 /**************************************************
  * @brie   :Send_Pack_Data()
- * @note   :发送一包数据
- * @param  :payload 要发送数据包的起始地址
- *          len 数据包长度
- * @retval :无
+ * @note   :Send a pack of data
+ * @param  :payload To send the start address of the packet
+ *          len Packet length
+ * @retval :none
  **************************************************/
-void Send_Pack_Data(uint8_t *payload,uint16_t len) 
+void Send_Pack_Data(uint8_t *payload,uint16_t len)
 {
-	uint8_t protocol_buff[40]; //发送缓冲区
+	uint8_t protocol_buff[40]; //Send buffer
 	uint8_t count = 0;
-	uint16_t crcpayload = crc16(payload, len);  //计算校验 
-	
+	uint16_t crcpayload = crc16(payload, len);  //Computing verification
+
 	/*
-		协议格式
-	
-		起始字节（一个字节） + 数据包长度（一个或两个字节） + 数据包（N个字节） + 校验（两个字节） + 停止字节（一个字节）
-	
-		起始字节:	0x02数据包长度1-256个字节
-					0x03数据包长度超过256个字节
-	
-		数据包长度: 起始字节0x02 数据包占一个字节
-	                起始字节0x03 数据包占两个字节
-	
-		数据包:  	数据包第一个字节为数据包ID
-	
-		校验:		CRC校验 两个字节 
-	    
-		停止字节:   固定0x03
-	
+		Protocol
+
+		Start byte (one byte) + packet length (one or two bytes) + packet (n bytes) + verification (two bytes) + stop bytes (one byte)
+
+		Initial byte:	0x02 Data packet length 1-256 bytes
+						0x03 Data packet length exceeds 256 bytes
+
+		Packet length:	Start byte 0x02 Data packets account for a byte
+						Start byte 0x03 Data packets account for two bytes
+
+		Packet:  		The first byte of the data packet is the data packet ID
+
+		Check:			CRC verification two bytes
+
+		Stop byte:   	Fixed 0x03
+
 	*/
-	
-	if (len <= 32) //数据包长度不大于256个字节
+
+	if (len <= 32) //The length of the packet is not greater than 32 bytes
 	{
 		protocol_buff[count++] = 2;
 		protocol_buff[count++] = len;
 	}
-	else //数据包长度大于256个字节
+	else //The length of the packet is greater than 32 bytes
 	{
 		// no need to support extra long messages since we don't use such messages
 		return;
+		// If the packer length were greater than 256 bytes:
 		//protocol_buff[count++] = 3;
 		//protocol_buff[count++] = (uint8_t)(len >> 8);
 		//protocol_buff[count++] = (uint8_t)(len & 0xFF);
 	}
 
-	memcpy(&protocol_buff[count], payload, len);  //把数据包复制到协议里
+	memcpy(&protocol_buff[count], payload, len);  //Copy the packet into the protocol
 
 	count += len;
 	protocol_buff[count++] = (uint8_t)(crcpayload >> 8);
 	protocol_buff[count++] = (uint8_t)(crcpayload & 0xFF);
 	protocol_buff[count++] = 3;
-	
+
 	USART1_Send_Bytes(protocol_buff,count);
 }
 
@@ -92,20 +93,20 @@ void buffer_append_float16(uint8_t* buffer, float number, uint8_t scale, uint8_t
 
 /**************************************************
  * @brie   :Get_Vesc_Pack_Data()
- * @note   :获取一包数据
- * @param  :id 数据包id
- * @retval :无
+ * @note   :Get a package of data
+ * @param  :id Packet ID
+ * @retval :none
  **************************************************/
 void Get_Vesc_Pack_Data(COMM_PACKET_ID id)
 {
 	uint8_t command[32];
 	int len = 1;
-	
+
 	command[0] = id;
-	
+
 	if (id == COMM_CUSTOM_APP_DATA) {
 		command[1] = 101;
-		command[2] = 24; // FLOAT_COMMAND_POLL
+		command[2] = FLOAT_COMMAND_LCM_POLL;
 		len = 3;
 		if (!lcmConfig.isSet) {
 			// write firmware id string to command
@@ -118,7 +119,7 @@ void Get_Vesc_Pack_Data(COMM_PACKET_ID id)
 	if (id == COMM_CHARGE_INFO) {
 		command[0] = COMM_CUSTOM_APP_DATA;
 		command[1] = 101;
-		command[2] = 28; 											// FLOAT_COMMAND_CHARGESTATE
+		command[2] = FLOAT_COMMAND_CHARGESTATE;
  		command[3] = 151; 											// -charging: 1/0 aka true/false
  		command[4] = Charge_Flag == 2 ? 1: 0; 						// -charging: 1/0 aka true/false
 		uint8_t ind = 5;
@@ -130,7 +131,7 @@ void Get_Vesc_Pack_Data(COMM_PACKET_ID id)
 	if (id == COMM_CUSTOM_DEBUG) {
 		command[0] = COMM_CUSTOM_APP_DATA;
 		command[1] = 101;
-		command[2] = 99; // FLOAT_COMMAND_LCM_DEBUG
+		command[2] = FLOAT_COMMAND_LCM_DEBUG;
 		command[3] = Power_Flag;
 		command[4] = Charge_Flag;
 		command[5] = data.dutyCycleNow;
@@ -141,15 +142,15 @@ void Get_Vesc_Pack_Data(COMM_PACKET_ID id)
 		command[10] = GPIOC->IDR;
 		len = 11;
 	}
-	
+
 	Send_Pack_Data(command, len);
 }
 
 /**************************************************
  * @brie   :buffer_get_int16()
- * @note   :缓冲区两个字节拼一个int16_t
- * @param  :buffer地址  index地址偏移
- * @retval :无
+ * @note   :Two bytes of the buffer to convert into an int16_t
+ * @param  :buffer-address  index-index into the buffer
+ * @retval :none
  **************************************************/
 int16_t buffer_get_int16(const uint8_t *buffer, int32_t *index) {
 	int16_t res =	((uint16_t) buffer[*index]) << 8 |
@@ -159,9 +160,9 @@ int16_t buffer_get_int16(const uint8_t *buffer, int32_t *index) {
 }
 /**************************************************
  * @brie   :buffer_get_uint16()
- * @note   :缓冲区两个字节拼一个uint16_t
- * @param  :buffer地址  index地址偏移
- * @retval :无
+ * @note   :The buffer two bytes to convert into a uint16_t
+ * @param  :buffer-address  index-index into the buffer
+ * @retval :none
  **************************************************/
 uint16_t buffer_get_uint16(const uint8_t *buffer, int32_t *index) {
 	uint16_t res = 	((uint16_t) buffer[*index]) << 8 |
@@ -171,9 +172,9 @@ uint16_t buffer_get_uint16(const uint8_t *buffer, int32_t *index) {
 }
 /**************************************************
  * @brie   :buffer_get_int32()
- * @note   :缓冲区四个字节拼一个int32_t
- * @param  :buffer地址  index地址偏移
- * @retval :无
+ * @note   :Four bytes of the buffer to converi into an int32_t
+ * @param  :buffer-address  index-index into the buffer
+ * @retval :none
  **************************************************/
 int32_t buffer_get_int32(const uint8_t *buffer, int32_t *index) {
 	int32_t res =	((uint32_t) buffer[*index]) << 24 |
@@ -185,9 +186,9 @@ int32_t buffer_get_int32(const uint8_t *buffer, int32_t *index) {
 }
 /**************************************************
  * @brie   :buffer_get_uint32()
- * @note   :缓冲区四个字节拼一个uint32_t
- * @param  :buffer地址  index地址偏移
- * @retval :无
+ * @note   :Four bytes of the buffer to convert into a uint32_t
+ * @param  :buffer-address  index-index into the buffer
+ * @retval :none
  **************************************************/
 uint32_t buffer_get_uint32(const uint8_t *buffer, int32_t *index) {
 	uint32_t res =	((uint32_t) buffer[*index]) << 24 |
@@ -199,21 +200,42 @@ uint32_t buffer_get_uint32(const uint8_t *buffer, int32_t *index) {
 }
 /**************************************************
  * @brie   :buffer_get_float16()
- * @note   :缓冲区两个字节拼一个float
- * @param  :buffer地址  index地址偏移  scale分母
- * @retval :无
+ * @note   :Two bytes of the buffer to convert into a float
+ * @param  :buffer-address  index-index into the buffer  scale-the scale of the data
+ * @retval :none
  **************************************************/
 float buffer_get_float16(const uint8_t *buffer, float scale, int32_t *index) {
 	return (float)buffer_get_int16(buffer, index) / scale;
 }
 /**************************************************
  * @brie   :buffer_get_float32()
- * @note   :缓冲区四个字节拼一个float
+ * @note   :Four bytes of the buffer to convert into a float
  * @param  :buffer地址  index地址偏移	scale分母
  * @retval :无
  **************************************************/
 float buffer_get_float32(const uint8_t *buffer, float scale, int32_t *index) {
 	return (float)buffer_get_int32(buffer, index) / scale;
+}
+
+void Process_Get_Values_Response(uint8_t * pdata, uint16_t len)
+{
+	int32_t ind = 0;
+
+	ind += 8;
+	data.avgInputCurrent 	= buffer_get_float32(pdata, 100.0, &ind); // negative input current implies braking
+	ind += 8; // Skip id/iq currents
+	data.dutyCycleNow 		= buffer_get_float16(pdata, 10.0, &ind);	// duty as value 0..100
+	data.rpm 				= buffer_get_int32(pdata, &ind);
+	data.inpVoltage 		= buffer_get_float16(pdata, 10.0, &ind);
+
+	if ((data.rpm > 100) || (data.rpm < -100) || (data.avgInputCurrent > 1) || (data.avgInputCurrent < -1)) {
+		data.state = RUNNING;
+	}
+	else {
+		// Use this fault as a placeholder (we only care that the board is stopped anyways)
+		data.state = FAULT_STARTUP;
+	}
+	data.isOldPackage = true;
 }
 
 void Process_Command(uint8_t command, uint8_t data)
@@ -269,36 +291,121 @@ void Process_Command(uint8_t command, uint8_t data)
 		}
 }
 
+void Process_LCM_Poll_Response(uint8_t * pdata, uint16_t len)
+{
+	int32_t ind = 0;
+
+	if (len < 9) {
+		return;
+	}
+
+	data.floatPackageSupported = true;
+	uint8_t state = pdata[ind++];
+	data.state = state & 0xF;
+	//data.switchstate = (state >> 4) & 0x7;
+	data.isHandtest = (state & 0x80) > 0;
+	data.fault = pdata[ind++];
+	if ((data.state == RUNNING) ||
+		(data.state == RUNNING_TILTBACK) ||
+		(data.state == RUNNING_WHEELSLIP)) {
+		data.dutyCycleNow = pdata[ind++];
+		data.pitch = 0;
+	}
+	else {
+		data.pitch = pdata[ind++];
+		data.dutyCycleNow = 0;
+	}
+	data.rpm = buffer_get_float16(pdata, 1.0, &ind);
+	data.avgInputCurrent = buffer_get_float16(pdata, 1.0, &ind);
+
+	float v = buffer_get_float16(pdata, 10.0, &ind);
+	if (data.inpVoltage < BATTERY_STRING * 2.5)
+		data.inpVoltage = v;
+	else
+		data.inpVoltage = data.inpVoltage * 0.9 + 0.1 * v;
+
+	if ((len >= ind + 3)) {
+		// Float package is 0-100 range. Adjust as needed
+		uint8_t headlightBrightness = pdata[ind++] * 255/100;
+		uint8_t headlightIdleBrightness = pdata[ind++] * 255/100;
+		uint8_t statusbarBrightness = pdata[ind++] * 255/100;
+
+		// Only set isSet if something changed
+		// Allows use of the power button to go back to default behaviour
+		if ((headlightBrightness != lcmConfig.headlightBrightness) ||
+			(headlightIdleBrightness != lcmConfig.headlightIdleBrightness) ||
+			(statusbarBrightness != lcmConfig.statusbarBrightness)) {
+			lcmConfig.isSet = true;
+		}
+
+		lcmConfig.headlightBrightness = headlightBrightness;
+		lcmConfig.headlightIdleBrightness = headlightIdleBrightness;
+		lcmConfig.statusbarBrightness = statusbarBrightness;
+
+		// Process generic command/config
+		while (len >= ind + 2) {
+			uint8_t command = pdata[ind++];
+			uint8_t data = pdata[ind++];
+			Process_Command(command, data);
+		}
+	}
+}
+
+void Process_Custom_App_Data_Response(uint8_t * pdata, uint16_t len)
+{
+	int32_t ind = 0;
+
+	if (len < 2) {
+		return;
+	}
+
+	uint8_t magicnr = pdata[ind++];
+	uint8_t floatcmd = pdata[ind++];
+	if (magicnr != 101) {
+		return;
+	}
+
+	pdata += ind;
+	len -= ind;
+
+	switch (floatcmd)
+	{
+		case FLOAT_COMMAND_LCM_POLL:
+			Process_LCM_Poll_Response(pdata, len);
+			break;
+	}
+}
+
 /**************************************************
  * @brie   :Protocol_Parse()
- * @note   :协议解析
- * @param  :message 接收到数据的起始地址
- * @retval :0 解析成功 1解析失败
+ * @note   :Protocol analysis
+ * @param  :Message receives the start address of the data
+ * @retval :0 Analysis success 1 Analysis failure
  **************************************************/
 uint8_t Protocol_Parse(uint8_t * message)
 {
 	uint8_t  start = 0;
 	uint8_t *pdata;
+	uint16_t datalen = 0;
 	uint16_t counter = 0;
-	uint16_t len = 0; 
+	uint16_t len = 0;
 	uint16_t crcpayload;
 	uint8_t id;
-	int32_t ind = 0;
-	
+
 	start = message[counter++];
-	
+
 	switch(start)
 	{
 		case 0x02:
 			len = message[counter++];
 		break;
-		
+
 		//case 0x03:
 			// we don't support/expect long messages, return error
 		default:
 			return 1;
 		break;
-		
+
 	}
 
 	if (len > sizeof(VESC_RX_Buff) - 4)
@@ -306,97 +413,29 @@ uint8_t Protocol_Parse(uint8_t * message)
 		// The indicated length of the message is greater than the buffer size
 		return 1;
 	}
-	
+
 	crcpayload = crc16(&message[counter], len);
-	
+
 	if(crcpayload != (((uint16_t)message[counter+len])<<8|
 					 ((uint16_t)message[counter+len+1])))
 	{
 		return 1; //crc is wrong
 	}
-	
+
+	id = pdata[counter++];
 	pdata = &message[counter];
-	id = pdata[ind++];
-	
+	datalen = len - 1; // len includes the id
+
 	switch(id)
 	{
-		case COMM_GET_VALUES: 
-
-			ind += 8;
-			data.avgInputCurrent 	= buffer_get_float32(pdata, 100.0, &ind); // negative input current implies braking
-			ind += 8; // Skip id/iq currents
-			data.dutyCycleNow 		= buffer_get_float16(pdata, 10.0, &ind);	// duty as value 0..100
-			data.rpm 				= buffer_get_int32(pdata, &ind);
-			data.inpVoltage 		= buffer_get_float16(pdata, 10.0, &ind);
-
-			if ((data.rpm > 100) || (data.rpm < -100) || (data.avgInputCurrent > 1) || (data.avgInputCurrent < -1)) {
-				data.state = RUNNING;
-			}
-			else {
-				// Use this fault as a placeholder (we only care that the board is stopped anyways)
-				data.state = FAULT_STARTUP;
-			}
-			data.isOldPackage = true;
-		
-		break;
-		
+		case COMM_GET_VALUES:
+			Process_Get_Values_Response(pdata, datalen);
+			break;
 		case COMM_CUSTOM_APP_DATA:
-
-		  if (len < 12) {
-				break;
-			}
-		  	uint8_t magicnr = pdata[ind++];
-		  	uint8_t floatcmd = pdata[ind++];
-			if ((magicnr != 101) || (floatcmd != FLOAT_COMMAND_LCM_POLL)) {
-				break;
-			}
-			data.floatPackageSupported = true;
-			uint8_t state = pdata[ind++];
-			data.state = state & 0xF;
-			//data.switchstate = (state >> 4) & 0x7;
-			data.isHandtest = (state & 0x80) > 0;
-			data.fault = pdata[ind++];
-			if ((data.state == RUNNING) || (data.state == RUNNING_TILTBACK) || (data.state == RUNNING_WHEELSLIP)) {
-				data.dutyCycleNow = pdata[ind++];
-				data.pitch = 0;
-			}
-			else {
-				data.pitch = pdata[ind++];
-				data.dutyCycleNow = 0;
-			}
-			data.rpm = buffer_get_float16(pdata, 1.0, &ind);
-			data.avgInputCurrent = buffer_get_float16(pdata, 1.0, &ind);
-
-			float v = buffer_get_float16(pdata, 10.0, &ind);
-			if (data.inpVoltage < BATTERY_STRING * 2.5)
-				data.inpVoltage = v;
-			else
-				data.inpVoltage = data.inpVoltage * 0.9 + 0.1 * v;
-
-			if ((len >= ind + 3)) {
-				// Float package is 0-100 range. Adjust as needed
-				uint8_t headlightBrightness = pdata[ind++] * 255/100;
-				uint8_t headlightIdleBrightness = pdata[ind++] * 255/100;
-				uint8_t statusbarBrightness = pdata[ind++] * 255/100;
-
-				// Only set isSet if something changed
-				// Allows use of the power button to go back to default behaviour
-				if (headlightBrightness != lcmConfig.headlightBrightness || headlightIdleBrightness != lcmConfig.headlightIdleBrightness || statusbarBrightness != lcmConfig.statusbarBrightness) {
-					lcmConfig.isSet = true;
-				}
-
-				lcmConfig.headlightBrightness = headlightBrightness;
-				lcmConfig.headlightIdleBrightness = headlightIdleBrightness;
-				lcmConfig.statusbarBrightness = statusbarBrightness;
-
-				// Process generic command/config
-				while (len >= ind + 2) {
-					uint8_t command = pdata[ind++];
-					uint8_t data = pdata[ind++];
-					Process_Command(command, data);
-				}
-			}
+			Process_Custom_App_Data_Response(pdata, datalen);
+			break;
 	}
+
 	if (data.rpm > 100)
 		data.isForward = data.state != RUNNING_UPSIDEDOWN;
 	if (data.rpm < -100)
