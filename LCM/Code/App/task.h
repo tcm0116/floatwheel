@@ -24,12 +24,15 @@
 
 #if defined(GTV)
 #define   BATTERY_STRING      		18
+#define   DEFAULT_CELL_TYPE         P42A
 #elif defined(PINTV) || defined(XRV)
 #define   BATTERY_STRING      		15
+#define   DEFAULT_CELL_TYPE         VTC6
 #elif defined(ADV)
 #define   BATTERY_STRING      		20
 #define	  FULL_VOLTAGE	  			82
 #define	  CHARGING_VOLTAGE	  		40
+#define   DEFAULT_CELL_TYPE         P42A
 #endif
 
 #define   SHUTDOWN_TIME		  		20
