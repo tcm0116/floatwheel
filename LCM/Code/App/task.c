@@ -2,6 +2,7 @@
 #include "math.h"
 #include "eeprom.h"
 #include "stdlib.h"
+#include "ws2812.h"
 
 #define  BOOT_ANIMATION_COUNT  3
 #define  STATUS_BAR_IDLE_MODE_COUNT  2
@@ -144,6 +145,23 @@ static void WS2812_Power_Display(uint8_t brightness)
  **************************************************/
 static void WS2812_VESC(void)
 {
+	if (data.hasReceivedLED) {
+
+		for (int i = 0; i < 10; i++) {
+			// extract RGB values from the 32-bit LED data (first 3 bytes)
+			uint8_t red = (data.ledData[i] >> 16) & 0xFF;
+			uint8_t green = (data.ledData[i] >> 8) & 0xFF;
+			uint8_t blue = data.ledData[i] & 0xFF;
+
+			WS2812_Set_Colour(i, red, green, blue);
+		}
+
+		// WS2812_Set_AllColours(1, 10,0,255,0);
+		WS2812_Refresh();
+
+		return;
+	}
+
 	uint8_t i;
 	uint8_t pos, red;
 	uint8_t green = 0;
@@ -477,13 +495,9 @@ void WS2812_Task(void)
 		WS2812_Handtest();
 	}
 	else {
-		if (WS2812_Display_Flag == 1) {
-			// Idle state - no footpads pressed
-			WS2812_Idle();	// Idle animation
-		} else {
-			Idle_Time = 0;
-			WS2812_VESC();
-		}
+		
+		Idle_Time = 0;
+		WS2812_VESC();
 	}
 }
 
@@ -753,6 +767,7 @@ void Headlights_Task(void)
 	if (Flashlight_Time < 10) {
 		return;
 	}
+
 	Flashlight_Time = 0;
 
 	if(Power_Flag != 2) // Lights off 
@@ -765,60 +780,75 @@ void Headlights_Task(void)
 		return;
 	}
 
-	if ((Target_Headlight_Brightness != 0) || (Current_Headlight_Brightness != 0)) {
-		if (Current_Headlight_Brightness < Target_Headlight_Brightness) {
-			Current_Headlight_Brightness += 3;
-			if (Current_Headlight_Brightness > Target_Headlight_Brightness)
-				Current_Headlight_Brightness = Target_Headlight_Brightness;
-		}
-		else if (Current_Headlight_Brightness > Target_Headlight_Brightness) {
-			Current_Headlight_Brightness -= 3;
-			if (Current_Headlight_Brightness < Target_Headlight_Brightness)
-				Current_Headlight_Brightness = Target_Headlight_Brightness;
-		}
-		Set_Headlights_Brightness(Current_Headlight_Brightness);
-	}
+	// use refloat for headlight brightness if available
+	if (data.hasReceivedLED) {
+		// determine what direction we are going based on if the front has any blue in it (meaning its white)
+		uint8_t front_red = data.ledData[10] >> 16;
+		uint8_t front_green = data.ledData[10] >> 8;
 
-	// Set new target
-	int new_brightness = Target_Headlight_Brightness;
-	if ((data.state < RUNNING_FLYWHEEL) || (ADC1_Val > 2) || (ADC2_Val > 2)) {
-		if (lcmConfig.isSet) {
-			new_brightness = lcmConfig.headlightBrightness;
-		}
-		else {
-			if (Gear_Position >= 1 && Gear_Position <= 3) {
-				new_brightness = headlight_brightnesses[Gear_Position - 1];
-			}
-		}
-		new_brightness *= data.isForward ? 1 : -1;
-	}
-	else {
-		new_brightness = 0;
-		if (lcmConfig.isSet) {
-			new_brightness = lcmConfig.headlightIdleBrightness;
-			float pitch = data.pitch > 0 ? data.pitch : -data.pitch;
-			if ((pitch > 75) && (pitch < 105)) {
-				// headlights off when the board is upgright (e.g. being carried or leaning against a wall)
-				new_brightness = 0;
-			}
+		if (front_green > 0) {
+			isForward = true;
 		}
 
-		if (gear_position_last == Gear_Position && Flashlight_Detection_Time >= 3100) {
-			Flashlight_Detection_Time = 3100;
+		// set the brightness based on red, set negative/positive based on direction
+		Set_Headlights_Brightness(front_red * (isForward ? 1 : -1));
+	} else {
+		if ((Target_Headlight_Brightness != 0) || (Current_Headlight_Brightness != 0)) {
+			if (Current_Headlight_Brightness < Target_Headlight_Brightness) {
+				Current_Headlight_Brightness += 3;
+				if (Current_Headlight_Brightness > Target_Headlight_Brightness)
+					Current_Headlight_Brightness = Target_Headlight_Brightness;
+			}
+			else if (Current_Headlight_Brightness > Target_Headlight_Brightness) {
+				Current_Headlight_Brightness -= 3;
+				if (Current_Headlight_Brightness < Target_Headlight_Brightness)
+					Current_Headlight_Brightness = Target_Headlight_Brightness;
+			}
+			Set_Headlights_Brightness(Current_Headlight_Brightness);
+		}
+
+		// Set new target
+		int new_brightness = Target_Headlight_Brightness;
+		if ((data.state < RUNNING_FLYWHEEL) || (ADC1_Val > 2) || (ADC2_Val > 2)) {
+			if (lcmConfig.isSet) {
+				new_brightness = lcmConfig.headlightBrightness;
+			}
+			else {
+				if (Gear_Position >= 1 && Gear_Position <= 3) {
+					new_brightness = headlight_brightnesses[Gear_Position - 1];
+				}
+			}
+			new_brightness *= data.isForward ? 1 : -1;
 		}
 		else {
-			// User double-pressed the power button, show the new brightness when idle
-			Flashlight_Detection_Time = 0;
-			if (Gear_Position >= 1 && Gear_Position <= 3 && !lcmConfig.isSet) {
-				new_brightness = headlight_brightnesses[Gear_Position - 1];
+			new_brightness = 0;
+			if (lcmConfig.isSet) {
+				new_brightness = lcmConfig.headlightIdleBrightness;
+				float pitch = data.pitch > 0 ? data.pitch : -data.pitch;
+				if ((pitch > 75) && (pitch < 105)) {
+					// headlights off when the board is upgright (e.g. being carried or leaning against a wall)
+					new_brightness = 0;
+				}
 			}
-			gear_position_last = Gear_Position;
+
+			if (gear_position_last == Gear_Position && Flashlight_Detection_Time >= 3100) {
+				Flashlight_Detection_Time = 3100;
+			}
+			else {
+				// User double-pressed the power button, show the new brightness when idle
+				Flashlight_Detection_Time = 0;
+				if (Gear_Position >= 1 && Gear_Position <= 3 && !lcmConfig.isSet) {
+					new_brightness = headlight_brightnesses[Gear_Position - 1];
+				}
+				gear_position_last = Gear_Position;
+			}
+		}
+		if (new_brightness != Target_Headlight_Brightness) {
+			Target_Headlight_Brightness = new_brightness;
+			Flashlight_Time = 0;
 		}
 	}
-	if (new_brightness != Target_Headlight_Brightness) {
-		Target_Headlight_Brightness = new_brightness;
-		Flashlight_Time = 0;
-	}
+
 }
 
 #ifdef USE_BUZZER

@@ -1,4 +1,5 @@
 #include "vesc_uasrt.h"
+#include "datatypes.h"
 #include "flag_bit.h"
 #include "eeprom.h"
 #include "task.h"
@@ -104,6 +105,14 @@ void Get_Vesc_Pack_Data(COMM_PACKET_ID id)
 	int len = 1;
 	
 	command[0] = id;
+
+	if (id == FLOAT_COMMAND_GET_LED) {
+		command[0] = COMM_CUSTOM_APP_DATA;
+		command[1] = 101;
+		command[2] = FLOAT_COMMAND_GET_LED; // FLOAT_COMMAND_GET_LED
+
+		len = 3;
+	}
 	
 	if (id == COMM_CUSTOM_APP_DATA) {
 		command[1] = 101;
@@ -342,60 +351,83 @@ uint8_t Protocol_Parse(uint8_t * message)
 		break;
 		
 		case COMM_CUSTOM_APP_DATA:
-
-		  if (len < 12) {
+		  	if (len < 12) {
 				break;
 			}
 		  	uint8_t magicnr = pdata[ind++];
 		  	uint8_t floatcmd = pdata[ind++];
-			if ((magicnr != 101) || (floatcmd != FLOAT_COMMAND_LCM_POLL)) {
+
+			if (magicnr != 101) {
 				break;
 			}
-			data.floatPackageSupported = true;
-			uint8_t state = pdata[ind++];
-			data.state = state & 0xF;
-			//data.switchstate = (state >> 4) & 0x7;
-			data.isHandtest = (state & 0x80) > 0;
-			data.fault = pdata[ind++];
-			if ((data.state == RUNNING) || (data.state == RUNNING_TILTBACK) || (data.state == RUNNING_WHEELSLIP)) {
-				data.dutyCycleNow = pdata[ind++];
-				data.pitch = 0;
-			}
-			else {
-				data.pitch = pdata[ind++];
-				data.dutyCycleNow = 0;
-			}
-			data.rpm = buffer_get_float16(pdata, 1.0, &ind);
-			data.avgInputCurrent = buffer_get_float16(pdata, 1.0, &ind);
 
-			float v = buffer_get_float16(pdata, 10.0, &ind);
-			if (data.inpVoltage < BATTERY_STRING * 2.5)
-				data.inpVoltage = v;
-			else
-				data.inpVoltage = data.inpVoltage * 0.9 + 0.1 * v;
+			switch (floatcmd) {
+				case FLOAT_COMMAND_GET_LED:
+					
+					if (pdata[ind++] == 12) {
+						data.hasReceivedLED = true;
 
-			if ((len >= ind + 3)) {
-				// Float package is 0-100 range. Adjust as needed
-				uint8_t headlightBrightness = pdata[ind++] * 255/100;
-				uint8_t headlightIdleBrightness = pdata[ind++] * 255/100;
-				uint8_t statusbarBrightness = pdata[ind++] * 255/100;
+						ind += 6; // offset to first LED value
 
-				// Only set isSet if something changed
-				// Allows use of the power button to go back to default behaviour
-				if (headlightBrightness != lcmConfig.headlightBrightness || headlightIdleBrightness != lcmConfig.headlightIdleBrightness || statusbarBrightness != lcmConfig.statusbarBrightness) {
-					lcmConfig.isSet = true;
-				}
+						for (int i = 0; i < 12; i++) {
+							data.ledData[i] = buffer_get_uint32(pdata, &ind);
+						}
+					}
 
-				lcmConfig.headlightBrightness = headlightBrightness;
-				lcmConfig.headlightIdleBrightness = headlightIdleBrightness;
-				lcmConfig.statusbarBrightness = statusbarBrightness;
 
-				// Process generic command/config
-				while (len >= ind + 2) {
-					uint8_t command = pdata[ind++];
-					uint8_t data = pdata[ind++];
-					Process_Command(command, data);
-				}
+					// Skip the rest of the package
+					break;
+
+				case FLOAT_COMMAND_LCM_POLL:
+					data.floatPackageSupported = true;
+					uint8_t state = pdata[ind++];
+					data.state = state & 0xF;
+					//data.switchstate = (state >> 4) & 0x7;
+					data.isHandtest = (state & 0x80) > 0;
+					data.fault = pdata[ind++];
+					if ((data.state == RUNNING) || (data.state == RUNNING_TILTBACK) || (data.state == RUNNING_WHEELSLIP)) {
+						data.dutyCycleNow = pdata[ind++];
+						data.pitch = 0;
+					}
+					else {
+						data.pitch = pdata[ind++];
+						data.dutyCycleNow = 0;
+					}
+					data.rpm = buffer_get_float16(pdata, 1.0, &ind);
+					data.avgInputCurrent = buffer_get_float16(pdata, 1.0, &ind);
+
+					float v = buffer_get_float16(pdata, 10.0, &ind);
+					if (data.inpVoltage < BATTERY_STRING * 2.5)
+						data.inpVoltage = v;
+					else
+						data.inpVoltage = data.inpVoltage * 0.9 + 0.1 * v;
+
+					if ((len >= ind + 3)) {
+						// Float package is 0-100 range. Adjust as needed
+						uint8_t headlightBrightness = pdata[ind++] * 255/100;
+						uint8_t headlightIdleBrightness = pdata[ind++] * 255/100;
+						uint8_t statusbarBrightness = pdata[ind++] * 255/100;
+
+						// Only set isSet if something changed
+						// Allows use of the power button to go back to default behaviour
+						if (headlightBrightness != lcmConfig.headlightBrightness || headlightIdleBrightness != lcmConfig.headlightIdleBrightness || statusbarBrightness != lcmConfig.statusbarBrightness) {
+							lcmConfig.isSet = true;
+						}
+
+						lcmConfig.headlightBrightness = headlightBrightness;
+						lcmConfig.headlightIdleBrightness = headlightIdleBrightness;
+						lcmConfig.statusbarBrightness = statusbarBrightness;
+
+						// Process generic command/config
+						while (len >= ind + 2) {
+							uint8_t command = pdata[ind++];
+							uint8_t data = pdata[ind++];
+							Process_Command(command, data);
+						}
+					}
+					break;
+				default:
+					break;
 			}
 	}
 	if (data.rpm > 100)

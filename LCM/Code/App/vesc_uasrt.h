@@ -1,6 +1,7 @@
 #ifndef __VESC_USART_H
 #define __VESC_USART_H
 
+#include <stdint.h>
 #include <string.h>
 #include "hk32f030m.h"
 #include "crc.h"
@@ -19,6 +20,8 @@ typedef struct {
 	char fault;
 	bool isForward;
 	bool isHandtest;
+	bool hasReceivedLED;
+	uint32_t ledData[12];
 }dataPackage;
 
 typedef struct {
