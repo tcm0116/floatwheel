@@ -145,23 +145,6 @@ static void WS2812_Power_Display(uint8_t brightness)
  **************************************************/
 static void WS2812_VESC(void)
 {
-	if (data.hasReceivedLED) {
-
-		for (int i = 0; i < 10; i++) {
-			// extract RGB values from the 32-bit LED data (first 3 bytes)
-			uint8_t red = (data.ledData[i] >> 16) & 0xFF;
-			uint8_t green = (data.ledData[i] >> 8) & 0xFF;
-			uint8_t blue = data.ledData[i] & 0xFF;
-
-			WS2812_Set_Colour(i, red, green, blue);
-		}
-
-		// WS2812_Set_AllColours(1, 10,0,255,0);
-		WS2812_Refresh();
-
-		return;
-	}
-
 	uint8_t i;
 	uint8_t pos, red;
 	uint8_t green = 0;
@@ -236,6 +219,25 @@ static void WS2812_VESC(void)
 		default:
 		break;
 	}
+	WS2812_Refresh();
+}
+
+
+/**************************************************
+ * @brie   :WS2812_Refloat()
+ * @note   :Shows Refloat LED data on the status bar
+ **************************************************/
+static void WS2812_Refloat(void)
+{
+	for (int i = 0; i < 10; i++) {
+		// extract RGB values from the 32-bit LED data (first 3 bytes)
+		uint8_t red = (data.ledData[i] >> 16) & 0xFF;
+		uint8_t green = (data.ledData[i] >> 8) & 0xFF;
+		uint8_t blue = data.ledData[i] & 0xFF;
+
+		WS2812_Set_Colour(i, red, green, blue);
+	}
+
 	WS2812_Refresh();
 }
 
@@ -495,9 +497,17 @@ void WS2812_Task(void)
 		WS2812_Handtest();
 	}
 	else {
-		
-		Idle_Time = 0;
-		WS2812_VESC();
+		if (data.ledDataValid) {
+			WS2812_Refloat();
+		} else {
+			if (WS2812_Display_Flag == 1) {
+				// Idle state - no footpads pressed
+				WS2812_Idle();	// Idle animation
+			} else {
+				Idle_Time = 0;
+				WS2812_VESC();
+			}
+		}
 	}
 }
 
@@ -781,7 +791,7 @@ void Headlights_Task(void)
 	}
 
 	// use refloat for headlight brightness if available
-	if (data.hasReceivedLED) {
+	if (data.ledDataValid) {
 		// determine what direction we are going based on if the front has any blue in it (meaning its white)
 		// front strip led index (number is a 32 bit uint) is 10
 		uint8_t front_red = (data.ledData[10] >> 16) & 0xFF;

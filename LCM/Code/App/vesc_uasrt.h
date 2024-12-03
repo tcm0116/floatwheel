@@ -20,7 +20,7 @@ typedef struct {
 	char fault;
 	bool isForward;
 	bool isHandtest;
-	bool hasReceivedLED;
+	bool ledDataValid;
 	uint32_t ledData[12];
 }dataPackage;
 

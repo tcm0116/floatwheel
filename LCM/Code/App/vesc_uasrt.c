@@ -3,6 +3,7 @@
 #include "flag_bit.h"
 #include "eeprom.h"
 #include "task.h"
+#include <stdint.h>
 
 uint8_t VESC_RX_Buff[80];
 uint8_t VESC_RX_Flag = 0;
@@ -364,16 +365,37 @@ uint8_t Protocol_Parse(uint8_t * message)
 			switch (floatcmd) {
 				case FLOAT_COMMAND_GET_LED:
 					
+					// make sure we have 12 LEDs
 					if (pdata[ind++] == 12) {
-						data.hasReceivedLED = true;
+						
+						uint8_t statusLength = pdata[ind++];
+						uint8_t frontLength = pdata[ind++];
+						uint8_t rearLength = pdata[ind++];
 
-						ind += 6; // offset to first LED value
+						uint8_t statusIdx = pdata[ind++];
+						uint8_t frontIdx = pdata[ind++];
+						uint8_t rearIdx = pdata[ind++];
 
+						// make sure we have the expected config for refloat LEDs
+						if (
+							statusLength != 10 ||
+							frontLength != 1 ||
+							rearLength != 1 ||
+							statusIdx != 0 ||
+							frontIdx != 10 ||
+							rearIdx != 11
+						) {
+							data.ledDataValid = false;
+							break;
+						}
+
+						// read the LED data into the data struct
 						for (int i = 0; i < 12; i++) {
 							data.ledData[i] = buffer_get_uint32(pdata, &ind);
 						}
-					}
 
+						data.ledDataValid = true;
+					}
 
 					// Skip the rest of the package
 					break;
