@@ -783,15 +783,13 @@ void Headlights_Task(void)
 	// use refloat for headlight brightness if available
 	if (data.hasReceivedLED) {
 		// determine what direction we are going based on if the front has any blue in it (meaning its white)
-		uint8_t front_red = data.ledData[10] >> 16;
-		uint8_t front_green = data.ledData[10] >> 8;
+		// front strip led index (number is a 32 bit uint) is 10
+		uint8_t front_red = (data.ledData[10] >> 16) & 0xFF;
+		uint8_t front_green = (data.ledData[10] >> 8) & 0xFF;
 
-		if (front_green > 0) {
-			isForward = true;
-		}
-
-		// set the brightness based on red, set negative/positive based on direction
-		Set_Headlights_Brightness(front_red * (isForward ? 1 : -1));
+		// set the brightness based on red, set negative/positive based on direction 
+		// (if green > 0, then show white on front)
+		Set_Headlights_Brightness(front_red * (front_green > 0 ? 1 : -1));
 	} else {
 		if ((Target_Headlight_Brightness != 0) || (Current_Headlight_Brightness != 0)) {
 			if (Current_Headlight_Brightness < Target_Headlight_Brightness) {
