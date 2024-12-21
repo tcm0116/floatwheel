@@ -588,6 +588,10 @@ void CheckPowerLevel(float battery_voltage)
 	float battVoltages[10] = { 4.1, 4.00, 3.9, 3.8, 3.7, 3.6, 3.5, 3.4, 3.3, 3.1 }; // Sony VTC6
 	#endif
 
+	#ifdef SAMSUNG_50S
+	float battVoltages[10] = {4.1, 3.975, 3.91, 3.816, 3.732, 3.64, 3.548, 3.47, 3.37, 3.225}; // Samsung 50S	
+	#endif
+
 	//static uint8_t cell_type_last = 1; //CELL_TYPE P42A equates out to 0
 
 	/*if (CELL_TYPE != cell_type_last) // If !P42a run once at boot or on change
@@ -602,7 +606,7 @@ void CheckPowerLevel(float battery_voltage)
 	// Default: Between zero and min voltage
 	Power_Display_Flag = 10;
 	for (int i=0;i<10;i++) {
-		if (battery_voltage > battVoltages[i]) {
+		if (battery_voltage >= battVoltages[i]) {
 			Power_Display_Flag = i + 1;
 			break;
 		}
@@ -1129,7 +1133,7 @@ void VESC_State_Task(void)
 
 	// Not charging? Get voltage from VESC
 	if (data.inpVoltage > 0) {
-		CheckPowerLevel((data.inpVoltage+1)/BATTERY_STRING);
+		CheckPowerLevel(data.inpVoltage/BATTERY_STRING);
 	}
 
 	if(data.dutyCycleNow < 0)
