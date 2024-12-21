@@ -36,6 +36,12 @@ solution:
         - VTC6
         - FIRMWARE_ID: '"XRV_$VERSION$"'
       device: HK_MicroChip::HK32F030MF4P6
+    - type: XRV-50S
+      define:
+        - BATTERY_STRING: 18
+        - SAMSUNG_50S
+        - FIRMWARE_ID: '"XRV_$VERSION$"'
+      device: HK_MicroChip::HK32F030MF4P6
   build-types:
     - type: Debug
       optimize: debug

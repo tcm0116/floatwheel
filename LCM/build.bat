@@ -22,3 +22,8 @@ cp Project\MDK5\out\LCM_Light_Control_IO_WS2812_New\PINTV\Release\*.hex .
 cbuild setup Project\MDK5\LCM_Light_Control_IO_WS2812_New.csolution.yml --context-set --context LCM_Light_Control_IO_WS2812_New.Release+XRV --packs
 cbuild Project\MDK5\LCM_Light_Control_IO_WS2812_New.csolution.yml --context-set --context LCM_Light_Control_IO_WS2812_New.Release+XRV
 copy Project\MDK5\out\LCM_Light_Control_IO_WS2812_New\XRV\Release\*.hex .
+
+@REM XRV-50S
+cbuild setup Project\MDK5\LCM_Light_Control_IO_WS2812_New.csolution.yml --context-set --context LCM_Light_Control_IO_WS2812_New.Release+XRV --packs
+cbuild Project\MDK5\LCM_Light_Control_IO_WS2812_New.csolution.yml --context-set --context LCM_Light_Control_IO_WS2812_New.Release+XRV-50S
+copy Project\MDK5\out\LCM_Light_Control_IO_WS2812_New\XRV-50S\Release\*.hex .

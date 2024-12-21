@@ -553,6 +553,10 @@ void CheckPowerLevel(float battery_voltage)
 	#ifdef VTC6
 	uint16_t battVoltages_mv[11] = {4200, 4064, 4015, 3895, 3821, 3745, 3655, 3559, 3459, 3292, 3000}; // Sony VTC6
 	#endif
+
+	#ifdef SAMSUNG_50S
+	float battVoltages_mv[11] = {4200, 3975, 3910, 3816, 3732, 3640, 3548, 3470, 3370, 3225, 3000}; // Samsung 50S
+	#endif
 	
     uint16_t battery_voltage_mv = battery_voltage * 1000;
 
