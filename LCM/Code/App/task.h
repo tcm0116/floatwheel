@@ -11,11 +11,12 @@ typedef enum
 {
 	P42A,
 	DG40,
-	VTC6
+	VTC6,
+    SAMSUNG_50S
 } CELL_TYPE;
 
 //#define PINTV
-#define XRV
+// #define XRV
 //#define GTV
 //#define ADV
 
@@ -32,6 +33,9 @@ typedef enum
 #define	  FULL_VOLTAGE				82
 #define	  CHARGING_VOLTAGE			40
 #define   DEFAULT_CELL_TYPE			P42A
+#else
+#define   BATTERY_STRING			18
+#define   DEFAULT_CELL_TYPE			SAMSUNG_50S
 #endif
 
 #define   SHUTDOWN_TIME				10
