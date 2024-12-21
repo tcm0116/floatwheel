@@ -30,23 +30,23 @@ uint8_t WS2812_Display_Flag = 0;
 */
 uint8_t WS2812_Flag = 0;
 /*
-	Power_Display_Flag = 0; 刚上电
-	Power_Display_Flag = 1； 4.08V~4.2V 	10个白灯
-	Power_Display_Flag = 2； 4.05V~4.08V 9个白灯
-	Power_Display_Flag = 3； 3.96V~4.05V 8个白灯
-	Power_Display_Flag = 4； 3.87V~3.96V 7个白灯
-	Power_Display_Flag = 5； 3.78V~3.87V 7个白灯
-	Power_Display_Flag = 6； 3.70V~3.78V 5个白灯
-	Power_Display_Flag = 7； 3.62V~3.70V 4个白灯
-	Power_Display_Flag = 8； 3.50V~3.62V 3个白灯
-	Power_Display_Flag = 9； 3.35V~3.50V 2个红灯
-	Power_Display_Flag = 10; 2.80V~3.35V 1个红灯
+	Power_Display_Flag = 0; Just call
+	Power_Display_Flag = 1; 4.08V~4.2V  10 white lights
+	Power_Display_Flag = 2; 4.05V~4.08V 9 white lights
+	Power_Display_Flag = 3; 3.96V~4.05V 8 white lights
+	Power_Display_Flag = 4; 3.87V~3.96V 7 white lights
+	Power_Display_Flag = 5; 3.78V~3.87V 7 white lights
+	Power_Display_Flag = 6; 3.70V~3.78V 5 white lights
+	Power_Display_Flag = 7; 3.62V~3.70V 4 white lights
+	Power_Display_Flag = 8; 3.50V~3.62V 3 white lights
+	Power_Display_Flag = 9; 3.35V~3.50V 2 white lights
+	Power_Display_Flag = 10; 2.80V~3.35V 1 white lights
 */
 uint8_t Power_Display_Flag = 0;
 /*
-	Buzzer_Flag = 0; 刚上电
-	Buzzer_Flag = 1；蜂鸣器不响
-	Buzzer_Flag = 2；蜂鸣器响
+	Buzzer_Flag = 0; Just call
+	Buzzer_Flag = 1; The buzzer is not ringing
+	Buzzer_Flag = 2; Buzzer ring
 */
 uint8_t Buzzer_Flag = 0;
 
@@ -56,24 +56,24 @@ uint8_t Buzzer_Flag = 0;
 uint8_t Vesc_Data_Ready = 0;
 
 /*
-	蜂鸣器响的时间
+	The time of the buzzer
 */
 uint16_t Buzzer_Time = 0;
 
 /*
-	充电计时
+	Charging timing
 */
 uint16_t Charge_Time = 0;
 /*
-	照明灯
+	FLashlight time
 */
 uint16_t Flashlight_Time = 0;
 /*
-	开机时间
+	Start time
 */
 uint16_t Power_Time = 0;
 /*
-	串口通信
+	Serial communication
 */
 uint16_t Usart_Time = 0;
 /*
@@ -109,7 +109,7 @@ float Charge_Voltage = 0;
 */
 uint8_t Gear_Position = 0;
 /*
-	WS2812量度
+	WS2812 measurement
 */
 uint8_t WS2812_Measure = 0;
 /*
