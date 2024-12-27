@@ -401,7 +401,7 @@ static void WS2812_Idle()
 				Idle_Time = 0;
 			}
 		}
-		else {
+		else if (Idle_Time > 10000) {
 			WS2818_Knight_Rider(WS2812_Measure);
 		}
 		return;
