@@ -367,14 +367,14 @@ uint8_t Protocol_Parse(uint8_t * message)
 					
 					// make sure we have 12 LEDs
 					if (pdata[ind++] == 12) {
-						
-						uint8_t statusLength = pdata[ind++];
-						uint8_t frontLength = pdata[ind++];
-						uint8_t rearLength = pdata[ind++];
 
 						uint8_t statusIdx = pdata[ind++];
 						uint8_t frontIdx = pdata[ind++];
 						uint8_t rearIdx = pdata[ind++];
+						
+						uint8_t statusLength = pdata[ind++];
+						uint8_t frontLength = pdata[ind++];
+						uint8_t rearLength = pdata[ind++];
 
 						// make sure we have the expected config for refloat LEDs
 						if (
