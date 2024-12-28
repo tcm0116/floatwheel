@@ -76,19 +76,6 @@ int main(void)
 			WS2812_Counter = 0;
 		}
 
-		// poll every 30ms (~30hz) for new LED data if we have previously received good data
-		if (WS2812_Refloat_Counter >= 30 && data.ledDataValid) {
-			Get_Vesc_Pack_Data(FLOAT_COMMAND_GET_LED);
-			WS2812_Refloat_Counter = 0;
-		} 
-		
-		// poll every 500ms for new LED data if we haven't received good data
-		// that way we don't spam the VESC with requests if refloat doesn't respond or have good data
-		else if (WS2812_Refloat_Counter >= 500 && !data.ledDataValid) {
-			Get_Vesc_Pack_Data(FLOAT_COMMAND_GET_LED);
-			WS2812_Refloat_Counter = 0;
-		}
-
 		Power_Task();
 
 #ifdef ADV
