@@ -348,6 +348,8 @@ uint8_t Protocol_Parse(uint8_t * message)
 				// Use this fault as a placeholder (we only care that the board is stopped anyways)
 				data.state = FAULT_STARTUP;
 			}
+
+			Vesc_Data_Ready = true;
 		
 		break;
 		
@@ -447,17 +449,24 @@ uint8_t Protocol_Parse(uint8_t * message)
 							Process_Command(command, data);
 						}
 					}
+
+					Vesc_Data_Ready = true;
+
 					break;
 				default:
 					break;
 			}
 	}
-	if (data.rpm > 100)
-		data.isForward = data.state != RUNNING_UPSIDEDOWN;
-	if (data.rpm < -100)
-		data.isForward = data.state == RUNNING_UPSIDEDOWN;
-	if (data.state > RUNNING_FLYWHEEL)
-		data.isForward = true;
+
+	if (Vesc_Data_Ready)
+	{
+		if (data.rpm > 100)
+			data.isForward = data.state != RUNNING_UPSIDEDOWN;
+		if (data.rpm < -100)
+			data.isForward = data.state == RUNNING_UPSIDEDOWN;
+		if (data.state > RUNNING_FLYWHEEL)
+			data.isForward = true;
+	}
 
 	return 0;
 }
