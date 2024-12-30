@@ -70,7 +70,7 @@ int main(void)
 	{
 		KEY1_Task();
 		
-		if(WS2812_Counter >= 20) // 20ms refresh period
+		if(WS2812_Counter >= 50) // 50ms refresh period
 		{
 			WS2812_Task();
 			WS2812_Counter = 0;
