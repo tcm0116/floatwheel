@@ -963,7 +963,7 @@ void Buzzer_Task(void)
  **************************************************/
 void Usart_Task(void)
 {
-	static uint16_t commandIndex = 0; // Store a rotating index so we can implement relevant frequencies of commands
+	static uint8_t commandIndex = 0; // Store a rotating index so we can implement relevant frequencies of commands
 	uint8_t result;
 
 	if(Power_Flag != 2)
@@ -992,8 +992,8 @@ void Usart_Task(void)
 		Protocol_Parse(VESC_RX_Buff);
 	}
 	
-	if (Usart_Time >= 16) {
-		if (commandIndex % 96 == 0) {
+	if (Usart_Time >= 20) {
+		if (commandIndex % 5 == 0) {
 			// Try the custom app command for the first 2 seconds then fall back to generic GET_VALUES
 			if ((data.floatPackageSupported == false) && (Power_Time > VESC_BOOT_TIME * 2)) {
 				Get_Vesc_Pack_Data(COMM_GET_VALUES);
@@ -1001,13 +1001,13 @@ void Usart_Task(void)
 				uint8_t command = COMM_CUSTOM_APP_DATA;
 
 #ifdef ADV
-				if (commandIndex % 1920 == 0) {
-					// Sending charge info every ~2 seconds
+				if (commandIndex % 100 == 0) {
+					// Sending charge info every 2 seconds
 					command = COMM_CHARGE_INFO;
 				} else 
 #endif
-				if (lcmConfig.debug && commandIndex % 192 == 0) {
-					// Send debug info every ~200ms if enabled
+				if (lcmConfig.debug && commandIndex % 10 == 0) {
+					// Send debug info every 200ms if enabled
 					command = COMM_CUSTOM_DEBUG;
 				}
 
@@ -1017,16 +1017,14 @@ void Usart_Task(void)
 		else if ((commandIndex > 0) && ((commandIndex - 1) % 2 == 0))
 		{
 			if ((data.ledDataValid == true) || (Power_Time < VESC_BOOT_TIME * 2)) {
-				// poll every 32ms (~30hz) for new LED data
+				// poll every 40ms (25hz) for new LED data
 				Get_Vesc_Pack_Data(FLOAT_COMMAND_GET_LED);
 			}
 		}
 
-		// Reset commandIndex after 1920 iterations (the max used by COMM_CHARGE_INFO)
-		if (commandIndex == 1920) {
+		// Reset commandIndex after 100 iterations (the max used by COMM_CHARGE_INFO)
+		if (++commandIndex == 100) {
 			commandIndex = 0;
-		} else {
-			commandIndex++;
 		}
 
 		Usart_Time = 0;
