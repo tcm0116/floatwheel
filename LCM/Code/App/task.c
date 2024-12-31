@@ -800,6 +800,11 @@ void Headlights_Task(void)
 		// set the brightness based on red, set negative/positive based on direction 
 		// (if green > 0, then show white on front)
 		Set_Headlights_Brightness(front_red * (front_green > 0 ? 1 : -1));
+
+		if (gear_position_last != Gear_Position) {
+			Get_Vesc_Pack_Data(FLOAT_COMMAND_LCM_CTRL);
+			gear_position_last = Gear_Position;
+		}
 	} else {
 		if ((Target_Headlight_Brightness != 0) || (Current_Headlight_Brightness != 0)) {
 			if (Current_Headlight_Brightness < Target_Headlight_Brightness) {

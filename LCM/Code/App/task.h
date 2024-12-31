@@ -50,6 +50,9 @@
 #define   NUM_LEDS 					10
 #define   DEFAULT_IDLE_MODE			0
 
+extern int headlight_brightnesses[];
+extern int status_brightnesses[];
+
 void LED_Task(void);
 void KEY1_Task(void);
 void WS2812_Task(void);
